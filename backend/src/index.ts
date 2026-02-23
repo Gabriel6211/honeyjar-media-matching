@@ -1,8 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { initDb } from "./db/client.js";
 
-dotenv.config({ path: "../.env" });
+import { join } from "path";
+
+dotenv.config({ path: join(process.cwd(), "../.env") });
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -14,6 +17,14 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
+async function start() {
+  await initDb();
+  app.listen(PORT, () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
