@@ -3,6 +3,7 @@ export interface Article {
   title: string;
   author: string | null;
   outlet: string;
+  outlet_type: OutletType | null;
   section: string | null;
   url: string;
   published_at: Date | null;

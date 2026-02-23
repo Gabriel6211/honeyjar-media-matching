@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS articles (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title         TEXT NOT NULL,
   author        TEXT,
-  outlet        TEXT NOT NULL DEFAULT 'The Guardian',
+  outlet        TEXT NOT NULL,
+  outlet_type   TEXT,
   section       TEXT,
   url           TEXT NOT NULL UNIQUE,
   published_at  TIMESTAMPTZ,
@@ -25,6 +26,13 @@ CREATE TABLE IF NOT EXISTS reporters (
   twitter_handle   TEXT,
   UNIQUE(name, outlet)
 );
+
+-- Add outlet_type column if it doesn't exist (for DBs created before this migration)
+DO $$ BEGIN
+  ALTER TABLE articles ADD COLUMN outlet_type TEXT;
+EXCEPTION WHEN duplicate_column THEN
+  NULL;
+END $$;
 
 CREATE INDEX IF NOT EXISTS articles_embedding_idx
   ON articles USING hnsw (embedding vector_cosine_ops);
