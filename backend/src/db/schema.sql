@@ -27,12 +27,5 @@ CREATE TABLE IF NOT EXISTS reporters (
   UNIQUE(name, outlet)
 );
 
--- Add outlet_type column if it doesn't exist (for DBs created before this migration)
-DO $$ BEGIN
-  ALTER TABLE articles ADD COLUMN outlet_type TEXT;
-EXCEPTION WHEN duplicate_column THEN
-  NULL;
-END $$;
-
 CREATE INDEX IF NOT EXISTS articles_embedding_idx
   ON articles USING hnsw (embedding vector_cosine_ops);
