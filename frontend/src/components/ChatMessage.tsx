@@ -4,6 +4,7 @@ import type { ChatMessage as ChatMessageType, OutletType, Geography } from "@/li
 import OutletPicker from "./OutletPicker";
 import GeographyPicker from "./GeographyPicker";
 import OptionalInput from "./OptionalInput";
+import ResultsList from "./ResultsList";
 
 /**
  * @param message         - The chat message to render (contains role, type, and content)
@@ -57,17 +58,18 @@ export default function ChatMessage({
 }: ChatMessageProps) {
   const isSystem = message.role === "system";
 
-  const hasInteractiveContent =
+  const hasWideContent =
     message.type === "outlet_picker" ||
     message.type === "geography_picker" ||
-    message.type === "optional_input";
+    message.type === "optional_input" ||
+    message.type === "results";
 
   return (
     <div className={`flex items-start gap-2.5 ${isSystem ? "justify-start" : "justify-end"}`}>
       {isSystem && <div className="pt-2.5"><BotIcon /></div>}
       <div
-        className={`rounded-2xl px-4 py-3 ${
-          hasInteractiveContent && isLatest ? "flex-1" : "max-w-[80%]"
+        className={`rounded-2xl px-4 py-3 min-w-0 ${
+          hasWideContent ? "flex-1" : "max-w-[80%]"
         } ${
           isSystem
             ? "bg-zinc-50 text-zinc-700 border border-zinc-100"
@@ -120,7 +122,10 @@ export default function ChatMessage({
         )}
 
         {message.type === "results" && (
-          <p className="text-sm">{message.content}</p>
+          <div className="flex flex-col gap-3">
+            <p className="text-sm">{message.content}</p>
+            {message.data && <ResultsList data={message.data} />}
+          </div>
         )}
       </div>
       {!isSystem && <div className="pt-2.5"><UserIcon /></div>}
