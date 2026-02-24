@@ -1,6 +1,8 @@
 "use client";
 
-import type { RankedReporter } from "@/lib/types";
+import { useState } from "react";
+import type { RankedReporter, ReporterArticle } from "@/lib/types";
+import { copyToClipboard } from "@/lib/export";
 
 interface ReporterCardProps {
   reporter: RankedReporter;
@@ -34,8 +36,60 @@ function matchColor(score: number): string {
   return "text-zinc-400";
 }
 
+/**
+ * Renders the justification text with the quoted article title replaced
+ * by a clickable hyperlink. The backend wraps the title in double quotes,
+ * e.g. '..."Some Article Title"...'. We find that quoted substring,
+ * match it to an article by title, and render it as an <a> tag.
+ * If no match is found, falls back to plain text.
+ */
+function LinkedJustification({
+  text,
+  articles,
+}: {
+  text: string;
+  articles: ReporterArticle[];
+}) {
+  // Find quoted text in the justification (the article title)
+  const quoteMatch = text.match(/"([^"]+)"/);
+  if (!quoteMatch) return <>{text}</>;
+
+  const quotedTitle = quoteMatch[1];
+  const matchingArticle = articles.find((a) => a.title === quotedTitle);
+
+  if (!matchingArticle) return <>{text}</>;
+
+  const beforeQuote = text.slice(0, quoteMatch.index);
+  const afterQuote = text.slice(quoteMatch.index! + quoteMatch[0].length);
+
+  return (
+    <>
+      {beforeQuote}
+      <a
+        href={matchingArticle.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="cursor-pointer font-medium text-orange-500 underline hover:text-orange-600"
+      >
+        {quotedTitle}
+      </a>
+      {afterQuote}
+    </>
+  );
+}
+
 export default function ReporterCard({ reporter, rank }: ReporterCardProps) {
   const { reporter: info, score, justification, articles } = reporter;
+  const [emailCopied, setEmailCopied] = useState(false);
+
+  const handleCopyEmail = async () => {
+    if (!info.email) return;
+    const ok = await copyToClipboard(info.email);
+    if (ok) {
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 overflow-hidden">
@@ -55,9 +109,9 @@ export default function ReporterCard({ reporter, rank }: ReporterCardProps) {
         </span>
       </div>
 
-      {/* Justification — the human-readable reason from the backend */}
+      {/* Justification — human-readable reason with the top article title as a link */}
       <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-        {justification}
+        <LinkedJustification text={justification} articles={articles} />
       </p>
 
       {/* Relevant articles — clickable links with date and match percentage */}
@@ -70,7 +124,7 @@ export default function ReporterCard({ reporter, rank }: ReporterCardProps) {
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-lg bg-zinc-50 px-3 py-2 text-xs transition-colors hover:bg-zinc-100"
+              className="block cursor-pointer rounded-lg bg-zinc-50 px-3 py-2 text-xs transition-colors hover:bg-zinc-100"
             >
               <span className="block text-zinc-700 truncate">{article.title}</span>
               <span className="mt-0.5 flex items-center gap-2">
@@ -87,26 +141,44 @@ export default function ReporterCard({ reporter, rank }: ReporterCardProps) {
       {/* Contact info — email, LinkedIn, Twitter */}
       <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-3">
         {info.email && (
-          <a
-            href={`mailto:${info.email}`}
-            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-500 transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-            <span className="line-clamp-1">{info.email}</span>
+          <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+            <a
+              href={`mailto:${info.email}`}
+              className="cursor-pointer flex items-center gap-1 hover:text-orange-500 transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span className="line-clamp-1">{info.email}</span>
+            </a>
             {info.email_confidence && (
               <span className="text-zinc-300">({Math.round(info.email_confidence * 100)}%)</span>
             )}
-          </a>
+            <button
+              onClick={handleCopyEmail}
+              className="cursor-pointer text-zinc-400 hover:text-orange-500 transition-colors"
+              title="Copy email"
+            >
+              {emailCopied ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              )}
+            </button>
+          </span>
         )}
         {info.linkedin_url && (
           <a
             href={info.linkedin_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-500 transition-colors"
+            className="cursor-pointer flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-500 transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z" />
@@ -118,8 +190,8 @@ export default function ReporterCard({ reporter, rank }: ReporterCardProps) {
         )}
         {info.twitter_handle && (
           <span className="flex items-center gap-1 text-xs text-zinc-500">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+            <svg width="12" height="12" viewBox="0 0 1200 1227" fill="currentColor">
+              <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" />
             </svg>
             {info.twitter_handle}
           </span>

@@ -37,7 +37,7 @@ export default function OutletPicker({ onConfirm, disabled }: OutletPickerProps)
               key={opt.value}
               onClick={() => toggle(opt.value)}
               disabled={disabled}
-              className={`rounded-full border px-3 py-1.5 text-sm transition-colors
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition-colors
                 ${
                   isSelected
                     ? "border-orange-300 bg-orange-50 text-orange-600"
@@ -53,7 +53,7 @@ export default function OutletPicker({ onConfirm, disabled }: OutletPickerProps)
       <button
         onClick={() => onConfirm(selected)}
         disabled={disabled || selected.length === 0}
-        className="self-start rounded-lg bg-orange-400 px-4 py-1.5 text-sm font-medium
+        className="cursor-pointer self-start rounded-lg bg-orange-400 px-4 py-1.5 text-sm font-medium
           text-white transition-colors hover:bg-orange-500 disabled:opacity-50
           disabled:cursor-not-allowed"
       >
