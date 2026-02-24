@@ -5,6 +5,7 @@ dotenv.config({ path: join(process.cwd(), "../.env") });
 
 import { fetchNewsApiArticles } from "../src/services/newsapi.js";
 import { classifyOutlet } from "../src/services/outlet-classifier.js";
+import { classifyGeography } from "../src/services/geography-classifier.js";
 import { embedTexts } from "../src/services/embedding.js";
 import { initDb, getPool } from "../src/db/client.js";
 import pgvector from "pgvector";
@@ -33,16 +34,18 @@ async function insertArticles(
 
   for (const article of articles) {
     const outletType = classifyOutlet(article.outlet);
+    const geography = classifyGeography(article.outlet);
     try {
       await pool.query(
-        `INSERT INTO articles (title, author, outlet, outlet_type, section, url, published_at, summary)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO articles (title, author, outlet, outlet_type, geography, section, url, published_at, summary)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (url) DO NOTHING`,
         [
           article.title,
           article.author,
           article.outlet,
           outletType,
+          geography,
           article.section,
           article.url,
           article.published_at,

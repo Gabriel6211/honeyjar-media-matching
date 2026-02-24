@@ -11,7 +11,7 @@ async function main() {
   const pool = getPool();
 
   const articles = await pool.query(
-    `SELECT id, title, author, outlet, outlet_type, section, url,
+    `SELECT id, title, author, outlet, outlet_type, geography, section, url,
             published_at, summary, embedding::text
      FROM articles
      WHERE embedding IS NOT NULL

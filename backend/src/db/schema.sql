@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS articles (
   author        TEXT,
   outlet        TEXT NOT NULL,
   outlet_type   TEXT,
+  geography     TEXT,
   section       TEXT,
   url           TEXT NOT NULL UNIQUE,
   published_at  TIMESTAMPTZ,

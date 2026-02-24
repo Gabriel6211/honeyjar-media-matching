@@ -29,7 +29,7 @@ interface NewsApiResponse {
 export async function fetchNewsApiArticles(
   query: string,
   pageSize = 50
-): Promise<Omit<Article, "id" | "outlet_type" | "embedding" | "created_at">[]> {
+): Promise<Omit<Article, "id" | "outlet_type" | "geography" | "embedding" | "created_at">[]> {
   const apiKey = process.env.NEWSAPI_KEY;
   if (!apiKey) {
     throw new Error("NEWSAPI_KEY is not set in environment");

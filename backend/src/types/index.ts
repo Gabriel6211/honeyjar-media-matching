@@ -4,6 +4,7 @@ export interface Article {
   author: string | null;
   outlet: string;
   outlet_type: OutletType | null;
+  geography: Geography | null;
   section: string | null;
   url: string;
   published_at: Date | null;
