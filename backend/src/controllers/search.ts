@@ -20,11 +20,21 @@ import type { OutletType, Geography, RankedReporter } from "../types/index.js";
  */
 export async function handleSearch(req: Request, res: Response): Promise<void> {
   try {
-    const { brief, outlet_types, geography } = req.body;
+    const { brief, outlet_types, geography, focus_publications, competitors } = req.body;
     const outletTypes: OutletType[] = outlet_types ?? [];
     const geoFilter: Geography[] = geography ?? [];
 
-    const briefVector = await embedText(brief);
+    // Enrich the brief with optional context before embedding.
+    // This gives the vector search more signal to find relevant articles.
+    let enrichedBrief = brief;
+    if (focus_publications) {
+      enrichedBrief += ` Focus publications: ${focus_publications}.`;
+    }
+    if (competitors) {
+      enrichedBrief += ` Competitors and context: ${competitors}.`;
+    }
+
+    const briefVector = await embedText(enrichedBrief);
 
     // Build query dynamically — add WHERE clauses based on which filters are active
     const conditions: string[] = [

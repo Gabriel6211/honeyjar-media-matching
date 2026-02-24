@@ -66,5 +66,15 @@ export function validateSearchBody(
     }
   }
 
+  if (req.body.focus_publications !== undefined && typeof req.body.focus_publications !== "string") {
+    res.status(400).json({ error: "focus_publications must be a string" });
+    return;
+  }
+
+  if (req.body.competitors !== undefined && typeof req.body.competitors !== "string") {
+    res.status(400).json({ error: "competitors must be a string" });
+    return;
+  }
+
   next();
 }
