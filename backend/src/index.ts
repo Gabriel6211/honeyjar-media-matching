@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { initDb } from "./db/client.js";
+import searchRouter from "./routes/search.js";
 
 import { join } from "path";
 
@@ -16,6 +17,8 @@ app.use(express.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
+
+app.use("/api/search", searchRouter);
 
 async function start() {
   await initDb();

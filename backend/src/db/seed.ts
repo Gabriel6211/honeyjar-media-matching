@@ -24,8 +24,8 @@ export async function loadSeedData(): Promise<void> {
   for (const article of articles) {
     try {
       await pool.query(
-        `INSERT INTO articles (id, title, author, outlet, outlet_type, section, url, published_at, summary, embedding)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO articles (id, title, author, outlet, outlet_type, geography, section, url, published_at, summary, embedding)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT (url) DO NOTHING`,
         [
           article.id,
@@ -33,6 +33,7 @@ export async function loadSeedData(): Promise<void> {
           article.author,
           article.outlet,
           article.outlet_type,
+          article.geography,
           article.section,
           article.url,
           article.published_at,
