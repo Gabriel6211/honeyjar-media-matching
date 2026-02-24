@@ -44,7 +44,7 @@ export default function OptionalInput({
         <button
           onClick={handleSubmit}
           disabled={disabled}
-          className="rounded-lg bg-orange-400 px-4 py-1.5 text-sm font-medium
+          className="cursor-pointer rounded-lg bg-orange-400 px-4 py-1.5 text-sm font-medium
             text-white transition-colors hover:bg-orange-500 disabled:opacity-50
             disabled:cursor-not-allowed"
         >

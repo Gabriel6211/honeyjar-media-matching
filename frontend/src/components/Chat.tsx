@@ -260,7 +260,7 @@ export default function Chat() {
           <button
             onClick={handleInputSend}
             disabled={!isInputActive || inputText.trim().length === 0}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+            className="cursor-pointer flex h-9 w-9 shrink-0 items-center justify-center rounded-full
               bg-orange-400 text-white transition-colors hover:bg-orange-500
               disabled:opacity-40 disabled:cursor-not-allowed"
           >
