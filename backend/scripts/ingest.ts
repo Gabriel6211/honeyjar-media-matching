@@ -5,7 +5,9 @@ dotenv.config({ path: join(process.cwd(), "../.env") });
 
 import { fetchNewsApiArticles } from "../src/services/newsapi.js";
 import { classifyOutlet } from "../src/services/outlet-classifier.js";
+import { embedTexts } from "../src/services/embedding.js";
 import { initDb, getPool } from "../src/db/client.js";
+import pgvector from "pgvector";
 
 // Search queries covering the 3 story briefs from the assignment:
 // A) Battery startup / climate / EV / US supply chain
@@ -84,8 +86,40 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  // Print summary
+  // Embed all articles that don't have embeddings yet
   const pool = getPool();
+
+  if (process.env.OPENAI_API_KEY) {
+    console.log("Embedding articles...");
+    const unembedded = await pool.query(
+      "SELECT id, title, summary FROM articles WHERE embedding IS NULL"
+    );
+    console.log(`  ${unembedded.rows.length} articles need embeddings`);
+
+    // Process in batches of 100 (OpenAI supports up to 2048 per call)
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < unembedded.rows.length; i += BATCH_SIZE) {
+      const batch = unembedded.rows.slice(i, i + BATCH_SIZE);
+      const texts = batch.map(
+        (row) => `${row.title}. ${row.summary || ""}`
+      );
+
+      const vectors = await embedTexts(texts);
+
+      for (let j = 0; j < batch.length; j++) {
+        await pool.query(
+          "UPDATE articles SET embedding = $1 WHERE id = $2",
+          [pgvector.toSql(vectors[j]), batch[j].id]
+        );
+      }
+
+      console.log(`Embedded ${Math.min(i + BATCH_SIZE, unembedded.rows.length)}/${unembedded.rows.length}`);
+    }
+  } else {
+    console.log("Skipping embeddings (OPENAI_API_KEY not set)");
+  }
+
+  // Print summary
   const countResult = await pool.query("SELECT COUNT(*) FROM articles");
   const outletResult = await pool.query(
     "SELECT outlet_type, COUNT(*) as count FROM articles GROUP BY outlet_type ORDER BY count DESC"

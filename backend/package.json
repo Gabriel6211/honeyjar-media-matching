@@ -6,12 +6,15 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "seed": "tsx scripts/seed.ts",
+    "export-seed": "tsx scripts/export-seed.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "openai": "^6.23.0",
     "pg": "^8.18.0",
     "pgvector": "^0.2.1"
   },
