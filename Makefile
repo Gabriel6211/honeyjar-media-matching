@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend db-up db-down ingest
+.PHONY: dev dev-backend dev-frontend db-up db-down ingest seed
 
 db-up:
 	docker compose up -d
@@ -18,3 +18,6 @@ dev: db-up
 
 ingest: db-up
 	cd backend && npm run ingest
+
+seed: db-up
+	cd backend && npm run seed
