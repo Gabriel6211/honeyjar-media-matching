@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { SearchResponse } from "@/lib/types";
 import { downloadCsv, buildEmailString, copyToClipboard } from "@/lib/export";
+import EmptyState from "./EmptyState";
 import ReporterCard from "./ReporterCard";
 
 interface ResultsListProps {
@@ -19,11 +20,10 @@ export default function ResultsList({ data }: ResultsListProps) {
 
   if (data.reporters.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-6 text-center">
-        <p className="text-sm text-zinc-500">
-          No matching reporters found. Try broadening your filters or adjusting your brief.
-        </p>
-      </div>
+      <EmptyState
+        message="No matching reporters found."
+        hint='Try selecting more outlet types, choosing "Global" geography, or adjusting your brief.'
+      />
     );
   }
 

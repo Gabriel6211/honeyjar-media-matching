@@ -108,7 +108,13 @@ export async function handleSearch(req: Request, res: Response): Promise<void> {
     res.json({ reporters: results, total: results.length });
   } catch (err) {
     console.error("Search error:", err);
-    res.status(500).json({ error: "Search failed" });
+    const message = err instanceof Error ? err.message : "Search failed";
+    // Surface embedding/API errors for easier debugging (e.g. missing OPENAI_API_KEY)
+    const userMessage =
+      message.toLowerCase().includes("openai") || message.toLowerCase().includes("embedding")
+        ? `Embedding failed: ${message}`
+        : "Search failed";
+    res.status(500).json({ error: userMessage });
   }
 }
 
@@ -131,11 +137,19 @@ function expandGeography(geoSelections: Geography[]): string[] | null {
   return [...regions];
 }
 
+/**
+ * Builds a human-readable justification for why a reporter matches.
+ * Guards against empty articles (edge case when all matches are filtered out).
+ */
 function buildJustification(
   name: string,
   articles: { title: string; similarity: number }[],
   score: number
 ): string {
+  if (articles.length === 0) {
+    return `${name} matches your brief. Overall relevance score: ${Math.round(score * 100)}%.`;
+  }
+
   const topArticle = articles[0];
   const matchPct = Math.round(topArticle.similarity * 100);
   const articleCount = articles.length;
