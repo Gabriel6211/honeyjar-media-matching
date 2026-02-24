@@ -15,6 +15,10 @@ import ChatMessage from "./ChatMessage";
  * Each step corresponds to one question in the chat flow.
  * The user must complete steps in order: brief → outlets → geography →
  * focus_publications → competitors → searching → results.
+ *
+ * After "results", the user can type refinements in the input bar
+ * (step stays "results") or start a completely new search ("brief").
+ * "refining" is a transient step while the refinement search runs.
  */
 type Step =
   | "brief"
@@ -23,6 +27,7 @@ type Step =
   | "focus_publications"
   | "competitors"
   | "searching"
+  | "refining"
   | "results";
 
 let messageId = 0;
@@ -72,6 +77,13 @@ export default function Chat() {
   const [focusPublications, setFocusPublications] = useState<string | undefined>();
   const [competitors, setCompetitors] = useState<string | undefined>();
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
+  /**
+   * Accumulates refinement instructions from the user. Each time the user
+   * types a follow-up after seeing results, it's pushed here. When we
+   * re-run the search, the original brief + all refinements are joined
+   * together so the embedding captures the full evolving context.
+   */
+  const [refinements, setRefinements] = useState<string[]>([]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -198,6 +210,89 @@ export default function Chat() {
     }
   };
 
+  /**
+   * Handles refinement after results are shown. The user types something
+   * like "Focus on Bloomberg reporters" or "Show more trade publications".
+   *
+   * How it works:
+   *   1. Appends the new refinement to the refinements array
+   *   2. Builds an enriched brief = original brief + all refinements joined
+   *   3. Sends the enriched brief to the same /api/search with same filters
+   *   4. Replaces the loading message with new results
+   *
+   * The backend doesn't need to know about refinement — it just gets a
+   * richer brief string that produces a different embedding vector,
+   * shifting the semantic search toward the user's updated intent.
+   */
+  const handleRefinement = async (text: string) => {
+    const updatedRefinements = [...refinements, text];
+    setRefinements(updatedRefinements);
+
+    setMessages((prev) => [
+      ...prev,
+      userMsg(text),
+      systemMsg("Refining your search...", "loading"),
+    ]);
+    setStep("refining");
+
+    const enrichedBrief = [brief, ...updatedRefinements].join(". ");
+
+    try {
+      const result = await searchReporters({
+        brief: enrichedBrief,
+        outlet_types: outletTypes.length > 0 ? outletTypes : undefined,
+        geography: geography.length > 0 ? geography : undefined,
+        focus_publications: focusPublications,
+        competitors,
+      });
+
+      setSearchResult(result);
+      setMessages((prev) => {
+        const withoutLoading = prev.filter((m) => m.type !== "loading");
+        return [
+          ...withoutLoading,
+          systemMsg(
+            `Updated results: ${result.total} reporter${result.total !== 1 ? "s" : ""} found.`,
+            "results",
+            result
+          ),
+        ];
+      });
+      setStep("results");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Refinement failed";
+      setMessages((prev) => {
+        const withoutLoading = prev.filter((m) => m.type !== "loading");
+        return [
+          ...withoutLoading,
+          systemMsg(`Something went wrong: ${errorMessage}. Try again or start a new search.`),
+        ];
+      });
+      setStep("results");
+    }
+  };
+
+  /**
+   * Resets the entire conversation back to the initial state.
+   * Clears all accumulated filters, brief, refinements, and results.
+   */
+  const handleNewSearch = () => {
+    setBrief("");
+    setOutletTypes([]);
+    setGeography([]);
+    setFocusPublications(undefined);
+    setCompetitors(undefined);
+    setSearchResult(null);
+    setRefinements([]);
+    setInputText("");
+    setMessages([
+      systemMsg(
+        "Starting fresh! Paste your story brief below and I'll find the best reporters to pitch."
+      ),
+    ]);
+    setStep("brief");
+  };
+
   // Determine which handler to pass based on the current step
   const optionalHandler =
     step === "focus_publications"
@@ -215,6 +310,8 @@ export default function Chat() {
 
     if (step === "brief") {
       handleBriefSubmit(trimmed);
+    } else if (step === "results") {
+      handleRefinement(trimmed);
     }
   };
 
@@ -225,7 +322,7 @@ export default function Chat() {
     }
   };
 
-  const isInputActive = step === "brief";
+  const isInputActive = step === "brief" || step === "results";
 
   return (
     <div className="flex h-full flex-col">
@@ -246,13 +343,32 @@ export default function Chat() {
       </div>
       <div className="border-t border-zinc-100 bg-white px-4 py-3">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
+          {step === "results" && (
+            <button
+              onClick={handleNewSearch}
+              title="Start a new search"
+              className="cursor-pointer flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                border border-zinc-200 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 1 9 9" />
+                <polyline points="3 21 3 12 12 12" />
+              </svg>
+            </button>
+          )}
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleInputKeyDown}
             disabled={!isInputActive}
-            placeholder={isInputActive ? "Type your story brief..." : "Complete the steps above..."}
+            placeholder={
+              step === "brief"
+                ? "Type your story brief..."
+                : step === "results"
+                  ? "Refine your search, e.g. 'Focus on Bloomberg reporters'..."
+                  : "Complete the steps above..."
+            }
             className="flex-1 rounded-full border border-zinc-200 px-4 py-2.5 text-sm
               text-zinc-700 placeholder-zinc-400 focus:border-orange-300 focus:outline-none
               focus:ring-1 focus:ring-orange-300 disabled:bg-zinc-50 disabled:opacity-60"
