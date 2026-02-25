@@ -80,11 +80,12 @@ Semantic search for reporters from story briefs. Paste your brief, select outlet
 
 **Flow**:
 1. User submits brief → backend embeds it with OpenAI
-2. pgvector similarity search over article embeddings
-3. Filter by outlet type and geography
-4. Rank reporters by similarity + recency + outlet relevance
-5. Mock enrichment (email, LinkedIn, Twitter)
-6. Return top 10–15 reporters with justifications
+2. On refinement: brief and refinements are embedded separately, then vectors are blended (65% brief, 35% refinements) so refinements meaningfully shift results
+3. pgvector similarity search over article embeddings
+4. Filter by outlet type and geography
+5. Rank reporters by similarity + recency + outlet relevance
+6. Mock enrichment (email, LinkedIn, Twitter)
+7. Return top 10–15 reporters with justifications
 
 ## Commands
 

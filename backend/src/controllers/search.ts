@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getPool } from "../db/client.js";
-import { embedText } from "../services/embedding.js";
+import { embedText, blendVectors } from "../services/embedding.js";
 import { rankReporters } from "../services/ranking.js";
 import { enrichReporter } from "../services/enrichment.js";
 import { geographyToRegions } from "../services/geography-classifier.js";
@@ -20,12 +20,13 @@ import type { OutletType, Geography, RankedReporter } from "../types/index.js";
  */
 export async function handleSearch(req: Request, res: Response): Promise<void> {
   try {
-    const { brief, outlet_types, geography, focus_publications, competitors } = req.body;
+    const { brief, refinements, outlet_types, geography, focus_publications, competitors } =
+      req.body;
     const outletTypes: OutletType[] = outlet_types ?? [];
     const geoFilter: Geography[] = geography ?? [];
+    const refinementList: string[] = refinements ?? [];
 
     // Enrich the brief with optional context before embedding.
-    // This gives the vector search more signal to find relevant articles.
     let enrichedBrief = brief;
     if (focus_publications) {
       enrichedBrief += ` Focus publications: ${focus_publications}.`;
@@ -34,14 +35,23 @@ export async function handleSearch(req: Request, res: Response): Promise<void> {
       enrichedBrief += ` Competitors and context: ${competitors}.`;
     }
 
-    const briefVector = await embedText(enrichedBrief);
+    let searchVector: number[];
+    if (refinementList.length > 0) {
+      // Blend brief and refinements so refinements have more influence (α = 0.35).
+      const briefVector = await embedText(enrichedBrief);
+      const refinementText = refinementList.join(". ");
+      const refinementVector = await embedText(refinementText);
+      searchVector = blendVectors(briefVector, refinementVector, 0.35);
+    } else {
+      searchVector = await embedText(enrichedBrief);
+    }
 
     // Build query dynamically — add WHERE clauses based on which filters are active
     const conditions: string[] = [
       "embedding IS NOT NULL",
       "author IS NOT NULL",
     ];
-    const params: unknown[] = [pgvector.toSql(briefVector)];
+    const params: unknown[] = [pgvector.toSql(searchVector)];
     let paramIdx = 2;
 
     if (outletTypes.length > 0) {

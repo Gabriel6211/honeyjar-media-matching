@@ -40,6 +40,7 @@ export interface SearchResponse {
 
 export interface SearchRequest {
   brief: string;
+  refinements?: string[];
   outlet_types?: OutletType[];
   geography?: Geography[];
   focus_publications?: string;

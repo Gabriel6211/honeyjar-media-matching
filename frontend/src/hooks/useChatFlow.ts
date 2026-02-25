@@ -206,11 +206,10 @@ export function useChatFlow(): UseChatFlowReturn {
     ]);
     setStep("refining");
 
-    const enrichedBrief = [brief, ...updatedRefinements].join(". ");
-
     await runSearch(
       {
-        brief: enrichedBrief,
+        brief,
+        refinements: updatedRefinements,
         outlet_types: outletTypes.length > 0 ? outletTypes : undefined,
         geography: geography.length > 0 ? geography : undefined,
         focus_publications: focusPublications,
