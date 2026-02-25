@@ -34,18 +34,6 @@ export type OutletType =
 
 export type Geography = "us" | "us_eu_uk" | "global";
 
-export interface SearchFilters {
-  outlet_types: OutletType[];
-  geography: Geography[];
-  focus_publications?: string;
-  competitors?: string;
-}
-
-export interface StoryBrief {
-  text: string;
-  filters: SearchFilters;
-}
-
 export interface ReporterArticle {
   title: string;
   url: string;

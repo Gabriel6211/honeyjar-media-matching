@@ -6,7 +6,7 @@
 - `id`, `title`, `author`, `outlet`, `outlet_type`, `geography`, `section`, `url`, `published_at`, `summary`, `embedding` (vector), `created_at`
 - HNSW index on `embedding` for fast cosine similarity search
 
-**reporters** — Schema exists for future use; currently reporters are derived from article authors at query time. Contact info comes from the enrichment service.
+**reporters** — Derived from article authors at query time (grouped by author + outlet). Contact info comes from the enrichment service.
 
 ## Ranking Formula
 
@@ -33,6 +33,8 @@ Top 15 reporters are returned with up to 3 articles each for justification.
 **Mocked contact enrichment** — Interface ready for RocketReach/Rephonic. Design note documents the integration path.
 
 **Separate frontend/backend** — Mirrors production architecture; API can be deployed independently.
+
+**Refinement vector blending** — Initially, refinements were concatenated to the brief before embedding. Because the brief is much longer, the short refinement text had little effect on the query vector and results barely changed. I now embed the brief and refinements separately, then blend their vectors (65% brief, 35% refinements) and normalize. This gives refinements explicit influence so follow-ups like "Focus on EV and battery technology" meaningfully shift the search toward those topics.
 
 ## Next Steps
 

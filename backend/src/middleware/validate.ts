@@ -76,5 +76,17 @@ export function validateSearchBody(
     return;
   }
 
+  if (req.body.refinements !== undefined) {
+    if (!Array.isArray(req.body.refinements)) {
+      res.status(400).json({ error: "refinements must be an array of strings" });
+      return;
+    }
+    const invalid = req.body.refinements.some((r: unknown) => typeof r !== "string");
+    if (invalid) {
+      res.status(400).json({ error: "refinements must contain only strings" });
+      return;
+    }
+  }
+
   next();
 }
