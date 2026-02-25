@@ -4,7 +4,8 @@ import { getPool } from "./client.js";
 
 /**
  * Loads seed articles from the committed JSON file into the database.
- * Used when running without API keys (e.g. reviewer runs `make seed`).
+ * Does not require NewsAPI — reviewers run `make seed` to populate articles.
+ * Note: Search still requires OPENAI_API_KEY (brief is embedded at query time).
  */
 export async function loadSeedData(): Promise<void> {
   const seedPath = join(process.cwd(), "data/seed-articles.json");
