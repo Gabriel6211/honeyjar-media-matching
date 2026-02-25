@@ -1,18 +1,21 @@
 "use client";
 
 import type { ChatMessage as ChatMessageType, OutletType, Geography } from "@/lib/types";
+import ErrorState from "./ErrorState";
+import LoadingState from "./LoadingState";
+import OptionalInput from "./OptionalInput";
 import OutletPicker from "./OutletPicker";
 import GeographyPicker from "./GeographyPicker";
-import OptionalInput from "./OptionalInput";
 import ResultsList from "./ResultsList";
 
 /**
  * @param message         - The chat message to render (contains role, type, and content)
- * @param onOutletConfirm - Called when user confirms outlet type selections
- * @param onGeoConfirm    - Called when user confirms geography selections
+ * @param onOutletConfirm  - Called when user confirms outlet type selections
+ * @param onGeoConfirm     - Called when user confirms geography selections
  * @param onOptionalSubmit - Called when user submits or skips an optional question.
  *                           Receives the text value, or null if skipped.
- * @param isLatest        - Whether this is the newest message in the chat.
+ * @param onRetry          - Called when user clicks Retry on an error message.
+ * @param isLatest         - Whether this is the newest message in the chat.
  *                           Only the latest message renders interactive elements
  *                           (inputs, pickers). Older messages show as static text.
  */
@@ -21,6 +24,7 @@ interface ChatMessageProps {
   onOutletConfirm?: (types: OutletType[]) => void;
   onGeoConfirm?: (geo: Geography[]) => void;
   onOptionalSubmit?: (value: string | null) => void;
+  onRetry?: () => void;
   isLatest?: boolean;
 }
 
@@ -54,6 +58,7 @@ export default function ChatMessage({
   onOutletConfirm,
   onGeoConfirm,
   onOptionalSubmit,
+  onRetry,
   isLatest,
 }: ChatMessageProps) {
   const isSystem = message.role === "system";
@@ -62,7 +67,8 @@ export default function ChatMessage({
     message.type === "outlet_picker" ||
     message.type === "geography_picker" ||
     message.type === "optional_input" ||
-    message.type === "results";
+    message.type === "results" ||
+    message.type === "error";
 
   return (
     <div className={`flex items-start gap-2.5 ${isSystem ? "justify-start" : "justify-end"}`}>
@@ -113,12 +119,7 @@ export default function ChatMessage({
         )}
 
         {message.type === "loading" && (
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 animate-bounce rounded-full bg-orange-400 [animation-delay:-0.3s]" />
-            <div className="h-2 w-2 animate-bounce rounded-full bg-orange-400 [animation-delay:-0.15s]" />
-            <div className="h-2 w-2 animate-bounce rounded-full bg-orange-400" />
-            <span className="ml-1 text-sm text-zinc-400">{message.content}</span>
-          </div>
+          <LoadingState message={message.content} />
         )}
 
         {message.type === "results" && (
@@ -126,6 +127,13 @@ export default function ChatMessage({
             <p className="text-sm">{message.content}</p>
             {message.data && <ResultsList data={message.data} />}
           </div>
+        )}
+
+        {message.type === "error" && (
+          <ErrorState
+            message={message.content}
+            onRetry={isLatest && onRetry ? onRetry : undefined}
+          />
         )}
       </div>
       {!isSystem && <div className="pt-2.5"><UserIcon /></div>}

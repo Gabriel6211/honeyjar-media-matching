@@ -55,7 +55,8 @@ export type MessageType =
   | "geography_picker"
   | "optional_input"
   | "loading"
-  | "results";
+  | "results"
+  | "error";
 
 export interface ChatMessage {
   id: string;
