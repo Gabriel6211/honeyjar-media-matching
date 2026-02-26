@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import type {
   ChatMessage as ChatMessageType,
   OutletType,
@@ -37,9 +37,13 @@ export interface UseChatFlowReturn {
   handleInputKeyDown: (e: React.KeyboardEvent) => void;
   isInputActive: boolean;
   isLoading: boolean;
-  retrySearchRef: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
+/**
+ * Manages the chat flow state machine: brief → outlets → geography →
+ * focus_publications → competitors → search → results. Handles refinement
+ * (re-search with blended vectors) and new search (reset).
+ */
 export function useChatFlow(): UseChatFlowReturn {
   const [messages, setMessages] = useState<ChatMessageType[]>([
     systemMsg(
@@ -55,8 +59,20 @@ export function useChatFlow(): UseChatFlowReturn {
   const [refinements, setRefinements] = useState<string[]>([]);
   const [inputText, setInputText] = useState("");
 
-  const retrySearchRef = useRef<() => Promise<void>>(null);
-
+  /**
+   * Calls the search API, shows loading, then replaces with results or error.
+   * Used by handleCompetitors (initial search) and handleRefinement (follow-up search).
+   *
+   * @param request - Search params: brief, refinements (optional), outlet_types, geography,
+   *   focus_publications, competitors. When refinements exist, backend blends brief + refinement
+   *   vectors for more relevant results.
+   * @param options.loadingMessage - Text shown in the loading bubble (e.g. "Searching for matching reporters...").
+   * @param options.successMessage - Function that receives the total count and returns the results
+   *   message (e.g. "Found 12 matching reporters! Here are the top matches:").
+   * @param options.stepWhileLoading - Step used during the request ("searching" or "refining");
+   *   affects cursor and aria-busy state.
+   * @param options.errorFallback - Fallback error message if the API throws without a message.
+   */
   const runSearch = async (
     request: SearchRequest,
     options: {
@@ -81,17 +97,6 @@ export function useChatFlow(): UseChatFlowReturn {
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : options.errorFallback;
-        retrySearchRef.current = async () => {
-          setMessages((prev) => {
-            const withoutError = prev.filter((m) => m.type !== "error");
-            return [
-              ...withoutError,
-              systemMsg(options.loadingMessage, "loading"),
-            ];
-          });
-          setStep(options.stepWhileLoading);
-          await doSearch();
-        };
         setMessages((prev) => {
           const withoutLoading = prev.filter((m) => m.type !== "loading");
           const withoutError = withoutLoading.filter((m) => m.type !== "error");
@@ -106,6 +111,7 @@ export function useChatFlow(): UseChatFlowReturn {
     await doSearch();
   };
 
+  /** Saves the brief and advances to outlet type selection. */
   const handleBriefSubmit = (text: string) => {
     setBrief(text);
     setMessages((prev) => [
@@ -119,8 +125,10 @@ export function useChatFlow(): UseChatFlowReturn {
     setStep("outlets");
   };
 
+  /** Saves outlet types and advances to geography selection. */
   const handleOutletConfirm = (selected: OutletType[]) => {
     setOutletTypes(selected);
+    // Convert the outlet types to a comma-separated list of labels
     const labels = selected
       .map((s) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
       .join(", ");
@@ -135,6 +143,7 @@ export function useChatFlow(): UseChatFlowReturn {
     setStep("geography");
   };
 
+  /** Saves geography and advances to focus publications (optional). */
   const handleGeoConfirm = (selected: Geography[]) => {
     setGeography(selected);
     const labels = selected
@@ -155,6 +164,7 @@ export function useChatFlow(): UseChatFlowReturn {
     setStep("focus_publications");
   };
 
+  /** Saves focus publications (or skip) and advances to competitors (optional). */
   const handleFocusPublications = (value: string | null) => {
     setFocusPublications(value ?? undefined);
     setMessages((prev) => [
@@ -168,6 +178,7 @@ export function useChatFlow(): UseChatFlowReturn {
     setStep("competitors");
   };
 
+  /** Saves competitors (or skip), runs the initial search, and shows results. */
   const handleCompetitors = async (value: string | null) => {
     const competitorValue = value ?? undefined;
     setCompetitors(competitorValue);
@@ -196,6 +207,7 @@ export function useChatFlow(): UseChatFlowReturn {
     );
   };
 
+  /** Appends the refinement text, re-runs search with blended vectors, and shows updated results. */
   const handleRefinement = async (text: string) => {
     const updatedRefinements = [...refinements, text];
     setRefinements(updatedRefinements);
@@ -225,6 +237,7 @@ export function useChatFlow(): UseChatFlowReturn {
     );
   };
 
+  /** Resets all state and returns the flow to the initial brief step. */
   const handleNewSearch = () => {
     setBrief("");
     setOutletTypes([]);
@@ -241,6 +254,7 @@ export function useChatFlow(): UseChatFlowReturn {
     setStep("brief");
   };
 
+  /** Resolves to handleFocusPublications or handleCompetitors based on current step. */
   const optionalHandler =
     step === "focus_publications"
       ? handleFocusPublications
@@ -248,6 +262,7 @@ export function useChatFlow(): UseChatFlowReturn {
         ? handleCompetitors
         : undefined;
 
+  /** Sends the input: submits brief if on brief step, or refinement if on results step. */
   const handleInputSend = () => {
     const trimmed = inputText.trim();
     if (trimmed.length === 0) return;
@@ -259,6 +274,7 @@ export function useChatFlow(): UseChatFlowReturn {
     }
   };
 
+  /** Submits on Enter (without Shift). */
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -286,6 +302,5 @@ export function useChatFlow(): UseChatFlowReturn {
     handleInputKeyDown,
     isInputActive,
     isLoading,
-    retrySearchRef,
   };
 }

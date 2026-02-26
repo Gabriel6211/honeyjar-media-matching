@@ -17,7 +17,6 @@ export default function Chat() {
     handleInputSend,
     handleInputKeyDown,
     isLoading,
-    retrySearchRef,
     handleNewSearch,
   } = useChatFlow();
 
@@ -42,11 +41,6 @@ export default function Chat() {
               onOutletConfirm={step === "outlets" ? handleOutletConfirm : undefined}
               onGeoConfirm={step === "geography" ? handleGeoConfirm : undefined}
               onOptionalSubmit={optionalHandler}
-              onRetry={
-                msg.type === "error" && idx === messages.length - 1
-                  ? () => retrySearchRef.current?.()
-                  : undefined
-              }
             />
           ))}
           <div ref={bottomRef} />

@@ -126,13 +126,13 @@ export default function ReporterCard({ reporter, rank }: ReporterCardProps) {
               rel="noopener noreferrer"
               className="block cursor-pointer rounded-lg bg-zinc-50 px-3 py-2 text-xs transition-colors hover:bg-zinc-100"
             >
-              <span className="block text-zinc-700 truncate">{article.title}</span>
-              <span className="mt-0.5 flex items-center gap-2">
+              <p className="block text-zinc-700 truncate">{article.title}</p>
+              <p className="mt-0.5 flex items-center gap-2">
                 <span className="text-zinc-400">{formatDate(article.published_at)}</span>
                 <span className={`font-medium ${matchColor(article.similarity)}`}>
                   {Math.round(article.similarity * 100)}%
                 </span>
-              </span>
+              </p>
             </a>
           ))}
         </div>

@@ -89,12 +89,15 @@ export function rankReporters(
   for (const [key, articles] of reporterMap) {
     const [name, outlet] = key.split("|||");
 
+    // Average the similarity scores of the articles of the reporter
     const avgSimilarity =
       articles.reduce((sum, a) => sum + a.similarity, 0) / articles.length;
 
+    // Get the best recency score from the articles of the reporter
     const bestRecency = Math.max(...articles.map((a) => recencyScore(a.published_at)));
 
-    // All articles have the same outlet type, so we can use the first one
+    // All articles have the same outlet type because they are grouped by author + outlet,
+    // so we can use the first one
     const outletRel = outletRelevanceScore(
       articles[0].outlet_type,
       selectedOutletTypes
