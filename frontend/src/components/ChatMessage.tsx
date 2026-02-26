@@ -14,7 +14,6 @@ import ResultsList from "./ResultsList";
  * @param onGeoConfirm     - Called when user confirms geography selections
  * @param onOptionalSubmit - Called when user submits or skips an optional question.
  *                           Receives the text value, or null if skipped.
- * @param onRetry          - Called when user clicks Retry on an error message.
  * @param isLatest         - Whether this is the newest message in the chat.
  *                           Only the latest message renders interactive elements
  *                           (inputs, pickers). Older messages show as static text.
@@ -24,7 +23,6 @@ interface ChatMessageProps {
   onOutletConfirm?: (types: OutletType[]) => void;
   onGeoConfirm?: (geo: Geography[]) => void;
   onOptionalSubmit?: (value: string | null) => void;
-  onRetry?: () => void;
   isLatest?: boolean;
 }
 
@@ -58,7 +56,6 @@ export default function ChatMessage({
   onOutletConfirm,
   onGeoConfirm,
   onOptionalSubmit,
-  onRetry,
   isLatest,
 }: ChatMessageProps) {
   const isSystem = message.role === "system";
@@ -130,10 +127,7 @@ export default function ChatMessage({
         )}
 
         {message.type === "error" && (
-          <ErrorState
-            message={message.content}
-            onRetry={isLatest && onRetry ? onRetry : undefined}
-          />
+          <ErrorState message={message.content} />
         )}
       </div>
       {!isSystem && <div className="pt-2.5"><UserIcon /></div>}

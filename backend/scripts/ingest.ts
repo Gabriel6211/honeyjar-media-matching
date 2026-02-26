@@ -36,6 +36,7 @@ async function insertArticles(
     const outletType = classifyOutlet(article.outlet);
     const geography = classifyGeography(article.outlet);
     try {
+      // Url is the natural unique identifier for the article
       await pool.query(
         `INSERT INTO articles (title, author, outlet, outlet_type, geography, section, url, published_at, summary)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)

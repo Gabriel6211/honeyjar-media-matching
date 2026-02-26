@@ -15,8 +15,6 @@ function getClient(): OpenAI {
 
 /**
  * Converts a piece of text into a 1536-dimensional vector using OpenAI.
- * The vector captures the semantic meaning of the text — similar topics
- * produce similar vectors, which lets us do similarity search in pgvector.
  */
 export async function embedText(text: string): Promise<number[]> {
   const response = await getClient().embeddings.create({
