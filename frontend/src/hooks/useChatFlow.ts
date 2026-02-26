@@ -82,33 +82,30 @@ export function useChatFlow(): UseChatFlowReturn {
       errorFallback: string;
     }
   ) => {
-    const doSearch = async () => {
-      try {
-        const result = await searchReporters(request);
-        setMessages((prev) => {
-          const withoutLoading = prev.filter((m) => m.type !== "loading");
-          const withoutError = withoutLoading.filter((m) => m.type !== "error");
-          return [
-            ...withoutError,
-            systemMsg(options.successMessage(result.total), "results", result),
-          ];
-        });
-        setStep("results");
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : options.errorFallback;
-        setMessages((prev) => {
-          const withoutLoading = prev.filter((m) => m.type !== "loading");
-          const withoutError = withoutLoading.filter((m) => m.type !== "error");
-          return [
-            ...withoutError,
-            systemMsg(`Something went wrong: ${errorMessage}.`, "error"),
-          ];
-        });
-        setStep("results");
-      }
-    };
-    await doSearch();
+    try {
+      const result = await searchReporters(request);
+      setMessages((prev) => {
+        const withoutLoading = prev.filter((m) => m.type !== "loading");
+        const withoutError = withoutLoading.filter((m) => m.type !== "error");
+        return [
+          ...withoutError,
+          systemMsg(options.successMessage(result.total), "results", result),
+        ];
+      });
+      setStep("results");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : options.errorFallback;
+      setMessages((prev) => {
+        const withoutLoading = prev.filter((m) => m.type !== "loading");
+        const withoutError = withoutLoading.filter((m) => m.type !== "error");
+        return [
+          ...withoutError,
+          systemMsg(`Something went wrong: ${errorMessage}.`, "error"),
+        ];
+      });
+      setStep("results");
+    }
   };
 
   /** Saves the brief and advances to outlet type selection. */
